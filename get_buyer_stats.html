@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buyer Statistics</title>
+    <style>
+        /* General styles */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            max-width: 800px; /* Adjust max-width as needed */
+            margin: auto; /* Center align content */
+            background-color: #f9f9f9; /* Light gray background */
+            color: #333; /* Dark gray text color */
+            padding: 20px;
+        }
+
+        /* Table styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #2980b9; /* Dark blue background for header */
+            color: #fff; /* White text color for header */
+        }
+        td {
+            background-color: #f2f2f2; /* Light gray background for cells */
+            color: #333; /* Dark gray text color for cells */
+        }
+
+        /* Heading styles */
+        h2, h3 {
+            margin-top: 20px;
+            color: #333; /* Dark gray text color for headings */
+        }
+
+        /* No data message */
+        .no-data {
+            color: #999; /* Lighter gray text color */
+            font-style: italic;
+            margin-top: 10px;
+        }
+
+        /* Chart container */
+        .chart-container {
+            width: 50%;
+            margin: 20px auto;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    {% if buyer_stats %}
+        <h2>{{ buyer_name }} Statistics</h2>
+        <p><strong>Total Payment Volume of {{ buyer_name }} is {{ buyer_stats.total_payment_volume }}</strong></p>
+
+        {% if buyer_stats.overall_position != 'N/A' %}
+            <p><strong>Position of {{ buyer_name }} in Overall data: {{ buyer_stats.overall_position }}</strong></p>
+        {% else %}
+            <p><strong>Position in Overall Data:</strong> Not ranked</p>
+        {% endif %}
+
+        {% if buyer_stats.issuer_position != 'N/A' %}
+            <p><strong>Position of {{ buyer_name }} within its issuer is: {{ buyer_stats.issuer_position }}</strong></p>
+        {% else %}
+            <p><strong>Position within Issuer:</strong> Not ranked</p>
+        {% endif %}
+
+        <h3>{{ buyer_name }} Comes Under {{ buyer_stats.buyer_industry }} Industry</h3>
+
+        <h3>Top 5 Buyers in the Same Industry:</h3>
+
+        {% if buyer_stats.top_5_buyers_in_industry %}
+            <table>
+                <tr>
+                    <th>Buyer</th>
+                    <th>Payment Volume</th>
+                </tr>
+                {% for buyer, volume in buyer_stats.top_5_buyers_in_industry.items() %}
+                <tr>
+                    <td>{{ buyer }}</td>
+                    <td>{{ volume }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+
+            <div class="chart-container">
+                <canvas id="topBuyersChart"></canvas>
+            </div>
+        {% endif %}
+
+        {% if buyer_stats.suppliers_info %}
+            <h3>Suppliers Information:</h3>
+            <table>
+                <tr>
+                    <th>Supplier</th>
+                    <th>Industry</th>
+                    <th>Payment Volume</th>
+                </tr>
+                {% for supplier_info in buyer_stats.suppliers_info %}
+                <tr>
+                    <td>{{ supplier_info.Supplier }}</td>
+                    <td>{{ supplier_info['Supplier Industry'] }}</td>
+                    <td>{{ supplier_info['Payment Volume'] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% endif %}
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                var ctx = document.getElementById('topBuyersChart').getContext('2d');
+                var chart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: [{% for buyer in buyer_stats.top_5_buyers_in_industry.keys() %}'{{ buyer }}',{% endfor %}],
+                        datasets: [{
+                            data: [{% for volume in buyer_stats.top_5_buyers_in_industry.values() %}{{ volume }},{% endfor %}],
+                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        var label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += context.parsed;
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
+
+    {% else %}
+        <p class="no-data">No statistics found for {{ buyer_name }}</p>
+    {% endif %}
+</body>
+</html>

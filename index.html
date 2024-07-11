@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Data Stats</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, #2980b9, #2c3e50); /* Gradient background */
+            margin: 0;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+            padding: 20px;
+            background-color: #ffffff; /* White background */
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3); /* Soft shadow */
+            max-width: 600px;
+            width: 100%;
+        }
+        .icon {
+            text-align: center;
+            padding: 20px;
+            border: 1px solid #2980b9; /* Border color */
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.3s;
+            width: 100%;
+            max-width: 350px;
+            background: linear-gradient(to bottom, #ffffff, #f8f9fa); /* Gradient background */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Light shadow */
+        }
+        .icon:hover {
+            transform: translateY(-5px); /* Hover effect */
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3); /* Increased shadow on hover */
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #2c3e50; /* Dark blue text color */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3); /* Text shadow for contrast */
+        }
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0;
+            color: #2980b9; /* Heading color */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Financial Data Stats</h1>
+        <div class="icon" onclick="window.location.href='{{ url_for('issuer_stats') }}'">
+            <h2>Issuer Stats</h2>
+        </div>
+        <div class="icon" onclick="window.location.href='{{ url_for('buyer_stats') }}'">
+            <h2>Buyer Stats</h2>
+        </div>
+        <div class="icon">
+            <h2>Supplier Stats</h2>
+        </div>
+    </div>
+</body>
+</html>

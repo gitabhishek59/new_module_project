@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Issuer Analysis</title>
+    <style>
+        /* General styles */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.4;
+            margin: 20px;
+            max-width: 800px;
+            margin-left: 0; /* Left align content */
+            background-color: #f9f9f9; /* Light gray background */
+            color: #333; /* Dark gray text color */
+            padding: 20px;
+        }
+
+        /* Form and input styles */
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 4px;
+        }
+        input[type="text"], input[type="number"], input[type="submit"] {
+            padding: 5px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            margin-bottom: 8px;
+            box-sizing: border-box;
+        }
+
+        input[type="submit"] {
+            width: 10%;
+            background-color: #2980b9; /* Button background color */
+            color: #fff; /* Button text color */
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        input[type="submit"]:hover {
+            background-color: #2c3e50; /* Darker button color on hover */
+        }
+
+        /* Table styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #2980b9; /* Dark blue background for header */
+            color: #fff; /* White text color for header */
+        }
+        td {
+            background-color: #f2f2f2; /* Light gray background for cells */
+            color: #333; /* Dark gray text color for cells */
+        }
+        h1, h2, h3 {
+            margin-top: 20px;
+            color: #333; /* Dark gray text color for headings */
+        }
+        .no-data {
+            color: #999; /* Lighter gray text color */
+            font-style: italic;
+            margin-top: 10px;
+            display: none; /* Hide by default */
+        }
+
+        /* Chart styles */
+        .chart-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chart {
+            width: 45%;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Issuer Analysis</h1>
+
+    <form method="POST" action="/issuer">
+        <label for="issuer_name">Enter Issuer Name:</label>
+        <input type="text" id="issuer_name" name="issuer_name" required>
+        <label for="top_n">Number of Top/Bottom Buyers and Suppliers:</label>
+        <input type="number" id="top_n" name="top_n" value="" required>
+        <input type="submit" value="Submit">
+    </form>
+
+    {% if issuer_stats %}
+        <h2>Issuer Statistics for {{ issuer_name }}</h2>
+        <p><strong>{{ issuer_name }} is in {{ issuer_stats.issuer_position }} position with overall payment volume of {{ issuer_stats.issuer_payment_volume }}.</strong></p>
+        <p><strong>There are {{ issuer_stats.number_of_buyers }} buyers under {{ issuer_name }}.</strong></p>
+        <p><strong>There are {{ issuer_stats.number_of_suppliers }} supplier associated to buyers under {{ issuer_name }}.</strong></p>
+
+        <div class="chart-container">
+            <div>
+                <h3>Top Buyer Industries under {{ issuer_name }}:</h3>
+                <table id="top-buyer-industry-table">
+                    <tr>
+                        <th>Industry</th>
+                        <th>Volume</th>
+                    </tr>
+                    {% for industry, volume in issuer_stats.top_buyer_industry.items() %}
+                    <tr>
+                        <td>{{ industry }}</td>
+                        <td>{{ volume }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            <div class="chart">
+                <canvas id="topBuyerIndustryChart"></canvas>
+            </div>
+        </div>
+
+        <h3>Top Buyers Under {{ issuer_name }}:</h3>
+        <table>
+            <tr>
+                <th>Buyer</th>
+                <th>Volume</th>
+            </tr>
+            {% for buyer, volume in issuer_stats.top_buyers.items() %}
+            <tr>
+                <td><a href="{{ url_for('get_buyer_stats', buyer_name=buyer) }}">{{ buyer }}</a></td>
+                <td>{{ volume }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h3>Bottom Buyers Under {{ issuer_name }}:</h3>
+        <table>
+            <tr>
+                <th>Buyer</th>
+                <th>Volume</th>
+            </tr>
+            {% for buyer, volume in issuer_stats.bottom_buyers.items() %}
+            <tr>
+                <td><a href="{{ url_for('get_buyer_stats', buyer_name=buyer) }}">{{ buyer }}</a></td>
+                <td>{{ volume }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div class="chart-container">
+            <div>
+                <h3>Top Supplier Industries Associated To {{ issuer_name }}:</h3>
+                <table id="top-supplier-industry-table">
+                    <tr>
+                        <th>Industry</th>
+                        <th>Volume</th>
+                    </tr>
+                    {% for industry, volume in issuer_stats.top_supplier_industry.items() %}
+                    <tr>
+                        <td>{{ industry }}</td>
+                        <td>{{ volume }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            <div class="chart">
+                <canvas id="topSupplierIndustryChart"></canvas>
+            </div>
+        </div>
+
+        <h3>Top Suppliers Associated To {{ issuer_name }}:</h3>
+        <table>
+            <tr>
+                <th>Supplier</th>
+                <th>Volume</th>
+            </tr>
+            {% for supplier, volume in issuer_stats.top_suppliers.items() %}
+            <tr>
+                <td>{{ supplier }}</td>
+                <td>{{ volume }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h3>Bottom Suppliers Associated To {{ issuer_name }}:</h3>
+        <table>
+            <tr>
+                <th>Supplier</th>
+                <th>Volume</th>
+            </tr>
+            {% for supplier, volume in issuer_stats.bottom_suppliers.items() %}
+            <tr>
+                <td>{{ supplier }}</td>
+                <td>{{ volume }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+    {% endif %}
+
+    <script>
+        // JavaScript to show/hide the no-data message based on form submission
+        document.querySelector('form').addEventListener('submit', function(event) {
+            const noDataMessage = document.querySelector('.no-data');
+            if (noDataMessage) {
+                noDataMessage.style.display = 'none'; // Hide no-data message initially
+            }
+        });
+
+        // JavaScript to update the no-data message dynamically
+        document.querySelector('#issuer_name').addEventListener('input', function(event) {
+            const noDataMessage = document.querySelector('.no-data');
+            const issuerName = document.querySelector('#issuer_name').value.trim();
+            if (noDataMessage) {
+                noDataMessage.style.display = issuerName ? 'none' : 'block'; // Show if no issuer name
+                document.querySelector('#no-data-issuer').textContent = issuerName;
+            }
+        });
+
+        // JavaScript to render the pie chart using Chart.js for top buyer industries
+        const topBuyerIndustryTable = document.getElementById('top-buyer-industry-table');
+        const buyerRows = topBuyerIndustryTable.querySelectorAll('tr');
+
+        const buyerLabels = [];
+        const buyerData = [];
+
+        buyerRows.forEach((row, index) => {
+            if (index > 0) { // Skip the header row
+                const cells = row.querySelectorAll('td');
+                buyerLabels.push(cells[0].textContent.trim());
+                buyerData.push(parseFloat(cells[1].textContent.trim().replace(/,/g, '')));
+            }
+        });
+
+        const buyerCtx = document.getElementById('topBuyerIndustryChart').getContext('2d');
+        new Chart(buyerCtx, {
+            type: 'pie',
+            data: {
+                labels: buyerLabels,
+                datasets: [{
+                    label: 'Top Buyer Industries',
+                    data: buyerData,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)',
+                        'rgba(255, 159, 64, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += new Intl.NumberFormat().format(context.parsed);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // JavaScript to render the bar chart using Chart.js for top supplier industries
+        const topSupplierIndustryTable = document.getElementById('top-supplier-industry-table');
+        const supplierRows = topSupplierIndustryTable.querySelectorAll('tr');
+
+        const supplierLabels = [];
+        const supplierData = [];
+
+        supplierRows.forEach((row, index) => {
+            if (index > 0) { // Skip the header row
+                const cells = row.querySelectorAll('td');
+                supplierLabels.push(cells[0].textContent.trim());
+                supplierData.push(parseFloat(cells[1].textContent.trim().replace(/,/g, '')));
+            }
+        });
+
+        const supplierCtx = document.getElementById('topSupplierIndustryChart').getContext('2d');
+        new Chart(supplierCtx, {
+            type: 'bar',
+            data: {
+                labels: supplierLabels,
+                datasets: [{
+                    label: 'Top Supplier Industries',
+                    data: supplierData,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)',
+                        'rgba(255, 159, 64, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat().format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

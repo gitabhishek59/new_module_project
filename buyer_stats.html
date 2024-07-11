@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buyer Statistics</title>
+    <style>
+        /* General styles */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px auto;
+            max-width: 800px; /* Adjust max-width as needed */
+            background-color: #f9f9f9; /* Light gray background */
+            color: #333; /* Dark gray text color */
+            padding: 20px;
+        }
+
+        /* Form and input styles */
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+        }
+        input[type="text"], input[type="submit"] {
+            padding: 5px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        input[type="submit"] {
+            width: 100%;
+            background-color: #2980b9; /* Button background color */
+            color: #fff; /* Button text color */
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        input[type="submit"]:hover {
+            background-color: #2c3e50; /* Darker button color on hover */
+        }
+
+        /* Table styles */
+        .table-container {
+            width: 100%;
+            margin-top: 20px;
+            overflow-x: auto; /* Enable horizontal scrolling if needed */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #ccc;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #2980b9; /* Dark blue background for header */
+            color: #fff; /* White text color for header */
+        }
+        td {
+            background-color: #f2f2f2; /* Light gray background for cells */
+            color: #333; /* Dark gray text color for cells */
+        }
+        h1, h2, h3 {
+            margin-top: 20px;
+            color: #333; /* Dark gray text color for headings */
+        }
+        .no-data {
+            color: #999; /* Lighter gray text color */
+            font-style: italic;
+            margin-top: 10px;
+            display: none; /* Hide by default */
+        }
+
+        /* Chart container */
+        .chart-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .chart {
+            width: 100%;
+            max-width: 500px; /* Adjust max-width as needed */
+            height: 300px; /* Adjust height as needed */
+        }
+    </style>
+</head>
+<body>
+    <h1>Buyer Statistics</h1>
+
+    <form method="POST" action="/buyer">
+        <label for="buyer_name">Enter Buyer Name:</label>
+        <input type="text" id="buyer_name" name="buyer_name" required>
+        <input type="submit" value="Submit">
+    </form>
+
+    <br>
+
+    {% if buyer_stats %}
+        <h2>{{ buyer_name }} Statistics</h2>
+        <p><strong>Total Payment Volume of {{ buyer_name }} is {{ buyer_stats.total_payment_volume }}</strong></p>
+
+        {% if buyer_stats.overall_position != 'N/A' %}
+            <p><strong>Position of {{ buyer_name }} in Overall data: {{ buyer_stats.overall_position }}</strong></p>
+        {% else %}
+            <p><strong>Position in Overall Data:</strong> Not ranked</p>
+        {% endif %}
+
+        {% if buyer_stats.issuer_position != 'N/A' %}
+            <p><strong>Position of {{ buyer_name }} within its issuer is: {{ buyer_stats.issuer_position }}</strong></p>
+        {% else %}
+            <p><strong>Position within Issuer:</strong> Not ranked</p>
+        {% endif %}
+
+        <h3>{{ buyer_name }} Comes Under {{ buyer_stats.buyer_industry }} Industry</h3>
+
+        {% if buyer_stats.top_5_buyers_in_industry %}
+            <h3>Top 5 Buyers in the Same Industry:</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Buyer</th>
+                        <th>Payment Volume</th>
+                    </tr>
+                    {% for buyer, volume in buyer_stats.top_5_buyers_in_industry.items() %}
+                    <tr>
+                        <td>{{ buyer }}</td>
+                        <td>{{ volume }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            <div class="chart-container">
+                <canvas id="topBuyersChart" class="chart"></canvas>
+            </div>
+        {% endif %}
+
+        {% if buyer_stats.suppliers_info %}
+            <h3>Suppliers Information:</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Supplier</th>
+                        <th>Industry</th>
+                        <th>Payment Volume</th>
+                    </tr>
+                    {% for supplier_info in buyer_stats.suppliers_info %}
+                    <tr>
+                        <td>{{ supplier_info.Supplier }}</td>
+                        <td>{{ supplier_info['Supplier Industry'] }}</td>
+                        <td>{{ supplier_info['Payment Volume'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        {% endif %}
+
+    {% else %}
+        <p class="no-data">No statistics found for {{ buyer_name }}</p>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // JavaScript to render the pie chart using Chart.js for top 5 buyers
+        const topBuyersTable = document.querySelector('.table-container table');
+        const buyerRows = topBuyersTable.querySelectorAll('tr');
+
+        const buyerLabels = [];
+        const buyerData = [];
+
+        buyerRows.forEach((row, index) => {
+            if (index > 0) { // Skip the header row
+                const cells = row.querySelectorAll('td');
+                buyerLabels.push(cells[0].textContent.trim());
+                buyerData.push(parseFloat(cells[1].textContent.trim().replace(/,/g, '')));
+            }
+        });
+
+        const ctx = document.getElementById('topBuyersChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: buyerLabels,
+                datasets: [{
+                    label: 'Top 5 Buyers in the Industry',
+                    data: buyerData,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += new Intl.NumberFormat().format(context.parsed);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
